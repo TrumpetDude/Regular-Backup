@@ -3,61 +3,15 @@ import pygame, sys
 from pygame.locals import *
 from random import randint
 pygame.init()
-window = pygame.display.set_mode((1300,700))#, pygame.FULLSCREEN)
+window = pygame.display.set_mode((1300,700))
 pygame.display.set_caption("Survive","Survive")
 pygame.key.set_repeat(1,1)
 from array import array
 from time import sleep
-import pygame
 from pygame.mixer import Sound, get_init, pre_init
-from tone import Note
+from surviveMethods import *
 
-#Methods
-def windowFill(red,green,blue):
-    window.fill((red,green,blue))
-def drawText(text, size, color, centerX, centerY):
-    font=pygame.font.Font("PressStart2P.ttf", size)
-    renderedText=font.render(text,True,color)
-    textpos=renderedText.get_rect()
-    textpos.centerx=centerX
-    textpos.centery=centerY
-    window.blit(renderedText, textpos)
-def playSound(hz,ms):
-    pre_init(44100, -16, 1, 1024)
-    Note(hz).play(ms)
-def done():
-    pygame.draw.line(window,(50,50,50),(0,350),(1300,350),200)
-    drawText("Are you sure you want to quit? Your Progress will not be saved.",20,(200,200,200),650,300)
-    drawText("Yes               No",24,(200,200,200),650,400)
-    pygame.draw.rect(window, (200,200,200), (395,375,100,50), 5)
-    pygame.draw.rect(window, (200,200,200), (815,375,100,50), 5)
-    pygame.display.update()
-    while True:
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                pygame.quit()
-                sys.exit(0)
-        mousePos=pygame.mouse.get_pos()
-        mousePressed=pygame.mouse.get_pressed()
-        if mousePos[1]>375 and mousePos[1]<425 and mousePos[0]>815 and mousePos[0]<915 and (mousePressed[0] or mousePressed[1] or mousePressed[2]):
-            break
-        if mousePos[1]>375 and mousePos[1]<425 and mousePos[0]>395 and mousePos[0]<495 and (mousePressed[0] or mousePressed[1] or mousePressed[2]):
-            pygame.quit()
-            sys.exit(0)
-def level2():
-    pygame.draw.line(window,(50,50,50),(0,350),(1300,350),200)
-    drawText("You have completed Level 1!",20,(200,200,200),650,300)
-    drawText("Continue",24,(200,200,200),650,400)
-    pygame.draw.rect(window, (200,200,200), (540,375,220,50), 5)
-    pygame.display.update()
-    while True:
-        for event in pygame.event.get():
-            if event.type == QUIT or (event.type==KEYUP and event.key == K_ESCAPE):
-                done()
-        mousePos=pygame.mouse.get_pos()
-        mousePressed=pygame.mouse.get_pressed()
-        if mousePos[1]>375 and mousePos[1]<425 and mousePos[0]>540 and mousePos[0]<760 and (mousePressed[0] or mousePressed[1] or mousePressed[2]):
-            import zombieApocalypse
+
 #Initialize Variables
 ticks=0
 HP=100
@@ -88,6 +42,10 @@ zombieOnScreen=False
 enemy1HP=0
 enemy2HP=0
 zombieHP=0
+coinX=0
+coinY=0
+chestX=0
+chestY=0
 
 #Load Images
 enemy1=pygame.image.load("enemy1.gif")
@@ -111,17 +69,13 @@ while HP>0:
     ticks+=1
     
     #Draw Background and words
-    windowFill(red,green,blue)
-    pygame.draw.rect(window, (50,50,50), (0,0,315,50),0)
-    pygame.draw.line(window,(0,0,0) ,(125,0), (125,50), 5)
-    drawText("+ SPEED: 1",12,(0, 0, 255),50,25)
-    drawText("+ HP REGEN: 2",12,(255, 0, 255),220,25)
-    drawText("COINS: "+str(coins), 26, (255,255,0),650,20)
-    drawText("HP: "+str(int(HP//1)), 26, (HPr, HPg, 0),650,50)
-    drawText("SCORE: "+str(score), 26, (255,255,255),1100,20)
-    if enemy1OnScreen or enemy2OnScreen or zombieOnScreen:
-        drawText("TOTAL ENEMY HP: "+str(int(enemy1HP//1)+int(enemy2HP//1)+int(zombieHP//1)), 26, (255,0,0),650,80)
-
+    drawAlways(window,
+               score,
+               coins,
+               HP, HPr, HPg,
+               enemy1OnScreen, enemy1HP,
+               enemy2OnScreen, enemy2HP,
+               zombieOnScreen, zombieHP)    
     #Make Coin
     if not(coinOnScreen) and randint(1,333)==1:
         coinOnScreen=True
@@ -172,12 +126,14 @@ while HP>0:
         zombieHP=20
         zombieStart=ticks
         
-    #Draw Coin
-    if coinOnScreen:
-        pygame.draw.circle(window, (255,255,0),(coinX,coinY),8,0)
-    #Draw Chest
-    if chestOnScreen:
-        window.blit(chest, (chestX, chestY))
+    #Draw Coin and Chest
+    drawStuff(window,
+              coinOnScreen,
+              coinX, coinY,
+              chest,
+              chestOnScreen,
+              chestX, chestY)
+
     #Draw and Move Double Speed
     if doubleSpeedOnScreen:
         window.blit(doubleSpeed, (speedX, speedY))
@@ -334,7 +290,6 @@ while HP>0:
         zombieHP=0
         infectStart=ticks
 
-        
     #Change HP text color
     if HP>=50:
         HPr=0+5*(100-HP)
@@ -342,7 +297,7 @@ while HP>0:
         HPr=255
     if HPr==255:
         HPg=255-5*(50-HP)
-
+        
     #Move and draw enemy1
     if enemy1OnScreen:
         if enemy1X<guyX:
@@ -389,7 +344,6 @@ while HP>0:
             coins+=25
             enemy2HP=0
             score+=500
-
     #Check if enemy1 is dead
     if enemy1OnScreen and enemy1HP<=0:
         playSound(396, 50)
@@ -397,6 +351,7 @@ while HP>0:
         coins+=10
         enemy1HP=0
         score+=250
+        
     #Damage zombie with Double Damage
     if ticks-damageStart<500:
         zombieStart-=1
@@ -409,10 +364,7 @@ while HP>0:
         score+=750
 
     #Regen HP
-    if HP<100-regenSpeed:
-        HP+=regenSpeed
-    else:
-        HP=100
+    regenHP(HP, regenSpeed)
 
     #Open Chest
     if chestOnScreen and chestX-guyX<48 and chestX-guyX>-100 and guyY-chestY>-48 and guyY-chestY<60:
@@ -429,11 +381,11 @@ while HP>0:
 
     #Check if level has advanced
     if score>=15000:
-        level2()
+        level2(window)
     # Check for key presses
     for event in pygame.event.get():
         if (event.type==KEYUP and event.key==K_ESCAPE)or event.type==QUIT:
-            done()
+            done(window)
         
         # Check if an arrow key is pressed and 
         # move guy in the correct direction
@@ -466,15 +418,15 @@ while HP>0:
                     
             elif event.key==K_1:
                 if baseSpeed>=5.999:
-                    drawText("ALREADY AT MAXIMUM VELOCITY!", 24, (255, 0, 0),650,680)
+                    drawText(window, "ALREADY AT MAXIMUM VELOCITY!", 24, (255, 0, 0),650,680)
                     pygame.display.update()
 
                 elif coins<baseSpeed*baseSpeed*baseSpeed:
-                    drawText("NOT ENOUGH COINS! Cost: "+str(baseSpeed*baseSpeed*baseSpeed), 24, (255, 127,0),650,680)
+                    drawText(window, "NOT ENOUGH COINS! Cost: "+str(baseSpeed*baseSpeed*baseSpeed), 24, (255, 127,0),650,680)
                     pygame.display.update()
                         
                 else:
-                    drawText("Confirm Purchase \"SPEED +1\" for "+str(baseSpeed*baseSpeed*baseSpeed)+" Coins? ENTER/BACKSPACE", 20, (0, 0, 255),650,680)
+                    drawText(window, "Confirm Purchase \"SPEED +1\" for "+str(baseSpeed*baseSpeed*baseSpeed)+" Coins? ENTER/BACKSPACE", 20, (0, 0, 255),650,680)
                     pygame.display.update()
                     for event in pygame.event.get():
                         if event.type==KEYDOWN:
@@ -490,15 +442,15 @@ while HP>0:
 
             elif event.key==K_2:                       
                 if regenSpeed>=0.005999:
-                    drawText("ALREADY AT MAXIMUM HP REGEN SPEED!", 24, (255, 0, 0),650,680)
+                    drawText(window, "ALREADY AT MAXIMUM HP REGEN SPEED!", 24, (255, 0, 0),650,680)
                     pygame.display.update()
 
                 elif coins<int(1000*regenSpeed*1000*regenSpeed*1000*regenSpeed):
-                    drawText("NOT ENOUGH COINS! Cost: "+str(int(1000*regenSpeed*1000*regenSpeed*1000*regenSpeed)), 24, (255, 127,0),650,680)
+                    drawText(window, "NOT ENOUGH COINS! Cost: "+str(int(1000*regenSpeed*1000*regenSpeed*1000*regenSpeed)), 24, (255, 127,0),650,680)
                     pygame.display.update()
                     
                 else:
-                    drawText("Confirm Purchase \"HP REGEN SPEED +1\" for "+str(int(1000*regenSpeed*1000*regenSpeed*1000*regenSpeed))+" Coins? RETURN/BACKSPACE", 19, (255, 0, 255),650,680)
+                    drawText(window, "Confirm Purchase \"HP REGEN SPEED +1\" for "+str(int(1000*regenSpeed*1000*regenSpeed*1000*regenSpeed))+" Coins? RETURN/BACKSPACE", 19, (255, 0, 255),650,680)
                     pygame.display.update()
                     for event in pygame.event.get():
                         if event.type==KEYDOWN:
@@ -522,14 +474,4 @@ while HP>0:
                         pygame.display.update()
                         pygame.time.delay(100)
                    
-for size in range(1,120):
-    pygame.time.delay(2)
-    drawText("GAME OVER!", size, (randint(0,255), randint(0,255), randint(0,255)),650,350)
-    pygame.display.update()
-drawText("GAME OVER!", 120, (255,0,0),650,350)
-pygame.display.update()
-while True:
-    for event in pygame.event.get():
-        if (event.type==KEYUP and event.key==K_ESCAPE) or event.type==QUIT:
-            pygame.quit()
-            sys.exit(0)
+gameOver(window)

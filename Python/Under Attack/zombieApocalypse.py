@@ -8,42 +8,9 @@ pygame.display.set_caption("Zombie Apocalypse","Zombie Apocalypse")
 pygame.key.set_repeat(1,1)
 from array import array
 from time import sleep
-import pygame
 from pygame.mixer import Sound, get_init, pre_init
-from tone import Note
+from zombieMethods import *
 
-#Methods
-def windowFill(red,green,blue):
-    window.fill((red,green,blue))
-def drawText(text, size, color, centerX, centerY):
-    font=pygame.font.Font("PressStart2P.ttf", size)
-    renderedText=font.render(text,True,color)
-    textpos=renderedText.get_rect()
-    textpos.centerx=centerX
-    textpos.centery=centerY
-    window.blit(renderedText, textpos)
-def playSound(hz,ms):
-    pre_init(44100, -16, 1, 1024)
-    Note(hz).play(ms)
-def done():
-    pygame.draw.line(window,(25,75,25),(0,350),(1300,350),200)
-    drawText("Are you sure you want to quit? Your Progress will not be saved.",20,(120,200,120),650,300)
-    drawText("Yes               No",24,(120,200,120),650,400)
-    pygame.draw.rect(window, (120,200,120), (395,375,100,50), 5)
-    pygame.draw.rect(window, (120,200,120), (815,375,100,50), 5)
-    pygame.display.update()
-    while True:
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                pygame.quit()
-                sys.exit(0)
-        mousePos=pygame.mouse.get_pos()
-        mousePressed=pygame.mouse.get_pressed()
-        if mousePos[1]>375 and mousePos[1]<425 and mousePos[0]>815 and mousePos[0]<915 and (mousePressed[0] or mousePressed[1] or mousePressed[2]):
-            break
-        if mousePos[1]>375 and mousePos[1]<425 and mousePos[0]>395 and mousePos[0]<495 and (mousePressed[0] or mousePressed[1] or mousePressed[2]):
-            pygame.quit()
-            sys.exit(0)
     
 #Initialize Variables
 ticks=0
@@ -77,12 +44,8 @@ plusHealth=pygame.image.load("health.gif")
 
 while HP>0:
     ticks+=1
-    
-    #Draw Background and words
-    windowFill(red,green,blue)
-    drawText("HP: "+str(int(HP//1)), 26, (HPr, HPg, 0),650,20)
-    drawText("SCORE: "+str(score), 26, (50,150,50),1100,20)
-    drawText("ZOMBIES: "+str(len(zombies)), 26, (255,0,0),650,50)
+
+    drawAlways(window, score, HP, HPr, HPg, zombies)
     
     #Make Double Speed
     if not(doubleSpeedOnScreen) and randint(1,600)==1 and ticks-speedStart>500:
@@ -211,7 +174,7 @@ while HP>0:
     # Check for key presses
     for event in pygame.event.get():
             if (event.type==KEYUP and event.key==K_ESCAPE)or event.type==QUIT:
-                done()
+                done(window)
         
             # Check if an arrow key is pressed and 
             # move guy in the correct direction
@@ -241,14 +204,4 @@ while HP>0:
                 playSound(220,100)
                 zombies.append([randint(0,1250),randint(0,650),uniform(2,5)])
                                  
-for size in range(1,120):
-    pygame.time.delay(2)
-    drawText("GAME OVER!", size, (0, size*2, 0),650,350)
-    pygame.display.update()
-drawText("GAME OVER!", 120, (255,0,0),650,350)
-pygame.display.update()
-while True:
-    for event in pygame.event.get():
-        if (event.type==KEYUP and event.key==K_ESCAPE) or event.type==QUIT:
-            pygame.quit()
-            sys.exit(0)
+gameOver(window)

@@ -7,17 +7,32 @@ window = pygame.display.set_mode((1300,700))
 pygame.display.set_caption("Undersea Adventure","Undersea Adventure")
 pygame.key.set_repeat(1,1)
 
-def drawText(text, size, color, centerX, centerY):
+def drawText(window, text, size, color, centerX, centerY):
     font=pygame.font.Font("comicSansMS.ttf", size)
     renderedText=font.render(text,True,color)
     textpos=renderedText.get_rect()
     textpos.centerx=centerX
     textpos.centery=centerY
     window.blit(renderedText, textpos)
-def quit():
-    #Are you sure you want to quit? Your progress will not be saved.
-    pygame.quit()
-    sys.exit(0)
+def done(window):
+    pygame.draw.line(window,(0,60,120),(0,350),(1300,350),200)
+    drawText(window, "Are you sure you want to quit? Your Progress will not be saved.",42,(100,120,255),650,300)
+    drawText(window, "Yes                 No",54,(100,120,255),650,385)
+    pygame.draw.rect(window, (100,120,255), (424,355,110,65), 5)
+    pygame.draw.rect(window, (100,120,255), (777,355,110,65), 5)
+    pygame.display.update()
+    while True:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit(0)
+        mousePos=pygame.mouse.get_pos()
+        mousePressed=pygame.mouse.get_pressed()
+        if mousePos[1]>355 and mousePos[1]<420 and mousePos[0]>777 and mousePos[0]<887 and (mousePressed[0] or mousePressed[1] or mousePressed[2]):
+            break
+        if mousePos[1]>355 and mousePos[1]<420 and mousePos[0]>424 and mousePos[0]<534 and (mousePressed[0] or mousePressed[1] or mousePressed[2]):
+            pygame.quit()
+            sys.exit(0)
 
 background = pygame.image.load("backGround.gif")
 clam = pygame.image.load("clam.gif")
@@ -32,7 +47,7 @@ shipRIGHT = pygame.transform.rotate(shipDOWN, 90.0)
 shipX = randint(0,1234)
 shipY = randint(0,634)
 shooters = 1
-speed = 0.25
+speed = 0.25                         #INITIAL SPEED
 ticks = 0
 ship = shipUP
 inU = 0
@@ -166,14 +181,14 @@ while True:
         window.blit(fish1, (fish1X, fish1Y))
         if fish1X < -65 or fish1X > 1301:
             fish1OnScreen = False
-        if bubble1 and bubbleX1-fish1X<76 and bubbleX1-fish1X>-12 and fish1Y-bubbleY1>-42 and fish1Y-bubbleY1<12:
+        if bubble1 and bubbleX1-fish1X<68 and bubbleX1-fish1X>-24 and fish1Y-bubbleY1>-44 and fish1Y-bubbleY1<24:
             fish1OnScreen = False
             bubble1 = False
             
     #Event Detection
     for event in pygame.event.get():
         if (event.type==KEYUP and event.key==K_ESCAPE) or event.type==QUIT:
-            quit()
+            done(window)
                 
 
                     
